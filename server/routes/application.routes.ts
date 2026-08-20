@@ -260,7 +260,7 @@ applicationRouter.post('/:id/ask-proofly', authenticateToken, async (req: Authen
       return res.status(400).json({ error: 'Question is required' });
     }
 
-    const response = AskProoflyService.answerQuestion(req.params.id, question);
+    const response = await AskProoflyService.answerQuestionAsync(req.params.id, question);
     return res.json(response);
   } catch (err: any) {
     return res.status(500).json({ error: err.message });

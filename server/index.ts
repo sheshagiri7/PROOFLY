@@ -49,6 +49,23 @@ app.use('/api/recruiter', recruiterRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/admin', adminRouter);
 
+import { AskProoflyService } from './services/AskProoflyService.js';
+
+// Global LLM Chat API
+app.post('/api/chat/llm', async (req, res) => {
+  try {
+    const { message, applicationId, history } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'Message text is required' });
+    }
+
+    const response = await AskProoflyService.answerQuestionAsync(applicationId || 'app-1', message, history || []);
+    return res.json(response);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'LLM Chat service error' });
+  }
+});
+
 // Root health check
 app.get('/api/ping', (req, res) => {
   res.json({

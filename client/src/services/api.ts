@@ -443,5 +443,15 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to fetch failed documents');
     return res.json();
+  },
+
+  async llmChat(message: string, applicationId?: string, history?: any[]) {
+    const res = await fetch(`${API_BASE}/chat/llm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, applicationId, history })
+    });
+    if (!res.ok) throw new Error('LLM Chat request failed');
+    return res.json();
   }
 };
