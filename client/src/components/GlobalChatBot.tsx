@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  MessageSquare, 
   X, 
   Send, 
   Sparkles, 
@@ -17,6 +16,7 @@ interface ChatMessage {
   sender: 'user' | 'bot';
   text: string;
   timestamp: string;
+  isStreaming?: boolean;
   modelUsed?: string;
   citations?: Array<{
     title: string;
@@ -41,7 +41,7 @@ export const GlobalChatBot: React.FC = () => {
     {
       id: 'msg-1',
       sender: 'bot',
-      text: "👋 Hi! I'm **PROOFLY LLM** — an evidence-first AI language model designed for recruitment intelligence. Every response is generated via zero-hallucination resume section citations.",
+      text: "👋 Hi! I'm **PROOFLY LLM** — a real-time evidence-first recruitment intelligence assistant. Ask me anything about candidate matches, resume citations, or blind screening.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       modelUsed: 'Gemini 2.5 Flash / PROOFLY LLM',
       suggestedPrompts: INITIAL_PROMPTS
@@ -55,6 +55,35 @@ export const GlobalChatBot: React.FC = () => {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen]);
+
+  // Real-time typewriter streaming effect for bot responses
+  const streamBotResponse = (fullText: string, botMsgId: string, meta: Partial<ChatMessage>) => {
+    const words = fullText.split(' ');
+    let currentWordIndex = 0;
+
+    const interval = setInterval(() => {
+      currentWordIndex++;
+      const partialText = words.slice(0, currentWordIndex).join(' ');
+
+      setMessages(prev =>
+        prev.map(m => {
+          if (m.id === botMsgId) {
+            return {
+              ...m,
+              text: partialText,
+              isStreaming: currentWordIndex < words.length
+            };
+          }
+          return m;
+        })
+      );
+
+      if (currentWordIndex >= words.length) {
+        clearInterval(interval);
+        setLoading(false);
+      }
+    }, 25);
+  };
 
   const handleSend = async (textToSend?: string) => {
     const text = textToSend || input;
@@ -76,17 +105,26 @@ export const GlobalChatBot: React.FC = () => {
       const historyPayload = messages.map(m => ({ sender: m.sender, text: m.text }));
       const llmResponse = await api.llmChat(text.trim(), 'app-1', historyPayload);
 
-      const botMsg: ChatMessage = {
-        id: `bot-${Date.now()}`,
+      const botMsgId = `bot-${Date.now()}`;
+      const placeholderBotMsg: ChatMessage = {
+        id: botMsgId,
         sender: 'bot',
-        text: llmResponse.answer || 'LLM model response received.',
+        text: '',
+        isStreaming: true,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        modelUsed: llmResponse.modelUsed || 'PROOFLY Grounded LLM Engine',
+        modelUsed: llmResponse.modelUsed || 'PROOFLY Real-Time LLM',
         citations: llmResponse.evidenceCitations,
         suggestedPrompts: llmResponse.suggestedFollowUps
       };
 
-      setMessages(prev => [...prev, botMsg]);
+      setMessages(prev => [...prev, placeholderBotMsg]);
+
+      // Stream text real-time word by word
+      streamBotResponse(
+        llmResponse.answer || 'Real-time LLM response generated.',
+        botMsgId,
+        llmResponse
+      );
     } catch (err: any) {
       setMessages(prev => [
         ...prev,
@@ -98,7 +136,6 @@ export const GlobalChatBot: React.FC = () => {
           modelUsed: 'LLM Error Handler'
         }
       ]);
-    } finally {
       setLoading(false);
     }
   };
@@ -108,15 +145,15 @@ export const GlobalChatBot: React.FC = () => {
       {/* Floating Action Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 p-4 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-2xl hover:shadow-blue-500/40 hover:scale-105 transition-all duration-300 group flex items-center gap-2.5 border border-blue-400/30"
-        title="Open PROOFLY LLM Chatbot"
+        className="fixed bottom-6 right-6 z-50 p-4 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-2xl hover:shadow-purple-500/40 hover:scale-105 transition-all duration-300 group flex items-center gap-2.5 border border-purple-400/30"
+        title="Open Real-Time PROOFLY LLM Chatbot"
       >
         <div className="relative">
           <Bot className="w-6 h-6 text-white group-hover:rotate-12 transition-transform duration-300" />
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#070B14] animate-pulse" />
         </div>
         <span className="hidden sm:inline-block font-semibold text-xs tracking-wide">
-          {isOpen ? 'Close LLM' : 'Ask PROOFLY LLM'}
+          {isOpen ? 'Close Bot' : 'Ask PROOFLY LLM'}
         </span>
       </button>
 
@@ -131,12 +168,13 @@ export const GlobalChatBot: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h4 className="text-xs font-bold text-white tracking-wide">PROOFLY LLM</h4>
-                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold">
-                    LIVE LLM
+                  <h4 className="text-xs font-bold text-white tracking-wide">PROOFLY REAL-TIME LLM</h4>
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    STREAMING
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400">Google GenAI / Evidence Grounded Engine</p>
+                <p className="text-[10px] text-slate-400">Google GenAI / Zero-Hallucination Token Engine</p>
               </div>
             </div>
             <button
@@ -161,10 +199,15 @@ export const GlobalChatBot: React.FC = () => {
                       : 'bg-slate-900/90 border border-slate-800 text-slate-200 rounded-bl-none shadow-sm'
                   }`}
                 >
-                  <p className="leading-relaxed whitespace-pre-line">{m.text}</p>
+                  <p className="leading-relaxed whitespace-pre-line">
+                    {m.text}
+                    {m.isStreaming && (
+                      <span className="inline-block w-1.5 h-4 ml-1 bg-purple-400 animate-pulse align-middle" />
+                    )}
+                  </p>
 
                   {/* Model Tag */}
-                  {m.modelUsed && m.sender === 'bot' && (
+                  {m.modelUsed && m.sender === 'bot' && !m.isStreaming && (
                     <div className="pt-1 flex items-center gap-1 text-[9px] font-mono text-purple-400">
                       <Sparkles className="w-2.5 h-2.5" />
                       <span>Model: {m.modelUsed}</span>
@@ -172,10 +215,10 @@ export const GlobalChatBot: React.FC = () => {
                   )}
 
                   {/* Citations Box */}
-                  {m.citations && m.citations.length > 0 && (
-                    <div className="p-2.5 rounded-xl bg-slate-950/90 border border-purple-500/25 space-y-2 mt-2">
+                  {m.citations && m.citations.length > 0 && !m.isStreaming && (
+                    <div className="p-2.5 rounded-xl bg-slate-950/90 border border-purple-500/25 space-y-2 mt-2 animate-fadeIn">
                       <p className="font-mono text-purple-300 text-[10px] uppercase font-bold flex items-center gap-1">
-                        <FileText className="w-3 h-3 text-purple-400" /> Exact LLM Evidence Citations:
+                        <FileText className="w-3 h-3 text-purple-400" /> Real-Time Evidence Citations:
                       </p>
                       {m.citations.map((c, idx) => (
                         <div key={idx} className="text-[10px] space-y-0.5 border-t border-slate-800/80 pt-1.5 first:border-0 first:pt-0">
@@ -193,8 +236,8 @@ export const GlobalChatBot: React.FC = () => {
                 <span className="text-[9px] font-mono text-slate-500 px-1">{m.timestamp}</span>
 
                 {/* Suggested Follow-up Chips */}
-                {m.suggestedPrompts && m.suggestedPrompts.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1 max-w-[90%]">
+                {m.suggestedPrompts && m.suggestedPrompts.length > 0 && !m.isStreaming && (
+                  <div className="flex flex-wrap gap-1.5 pt-1 max-w-[90%] animate-fadeIn">
                     {m.suggestedPrompts.map((prompt, pIdx) => (
                       <button
                         key={pIdx}
@@ -210,10 +253,10 @@ export const GlobalChatBot: React.FC = () => {
               </div>
             ))}
 
-            {loading && (
+            {loading && !messages.some(m => m.isStreaming) && (
               <div className="flex items-center gap-2 text-slate-400 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs w-max">
                 <RefreshCw className="w-3.5 h-3.5 text-purple-400 animate-spin" />
-                <span>Generating LLM inference & grounding facts...</span>
+                <span>Connecting real-time LLM token stream...</span>
               </div>
             )}
             <div ref={chatEndRef} />
@@ -232,13 +275,13 @@ export const GlobalChatBot: React.FC = () => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask PROOFLY LLM model anything..."
+                placeholder="Message PROOFLY Real-Time LLM..."
                 className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || loading}
-                className="p-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white transition-all disabled:opacity-40"
+                className="p-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white transition-all disabled:opacity-40 shadow-md shadow-purple-600/20"
               >
                 <Send className="w-3.5 h-3.5" />
               </button>

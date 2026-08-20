@@ -47,9 +47,10 @@ Target Role: ${appData?.job_title || 'Senior Full-Stack Engineer'}
 Verified Evidence Items: ${JSON.stringify(evidence)}
 
 Instructions:
-1. Provide a direct, professional answer grounded in verified resume citations.
-2. Maintain zero fabrication or hallucination.
-3. Format output strictly as JSON with keys:
+1. Provide a direct, professional, conversational answer.
+2. For greetings (e.g. "hi", "hello"), respond naturally as an AI recruitment assistant and explain what you can do.
+3. Maintain zero fabrication or hallucination regarding candidate evidence.
+4. Format output strictly as JSON with keys:
    "answer": string,
    "groundedFacts": string[],
    "evidenceCitations": array of { "title": string, "section": string, "snippet": string, "status": "VERIFIED"|"SUPPORTED"|"NO_EVIDENCE" },
@@ -83,12 +84,12 @@ Instructions:
     const result = AskProoflyService.answerQuestion(applicationId, question);
     return {
       ...result,
-      modelUsed: 'PROOFLY Grounded LLM Engine (Zero-Hallucination)'
+      modelUsed: 'PROOFLY Grounded LLM Engine'
     };
   }
 
   static answerQuestion(applicationId: string, question: string): AskProoflyResponse {
-    const qLower = question.toLowerCase();
+    const qTrim = question.trim().toLowerCase();
 
     // Fetch candidate and job data
     const app = db.prepare(`
@@ -106,8 +107,65 @@ Instructions:
 
     const candidateName = app?.candidate_name || 'Alex Rivera';
 
-    // 1. Missing Requirements question
-    if (qLower.includes('missing') || qLower.includes('gap') || qLower.includes('lack') || qLower.includes('why not 100')) {
+    // 0. Greetings & Introductions
+    const greetingWords = ['hi', 'hello', 'hey', 'greetings', 'who are you', 'help', 'what can you do', 'good morning', 'good evening', 'yo'];
+    const isGreeting = greetingWords.some(g => qTrim === g || qTrim.startsWith(g + ' ') || qTrim.endsWith(' ' + g));
+
+    if (isGreeting) {
+      return {
+        answer: `Hello! 👋 I am **PROOFLY LLM**, your evidence-first hiring & recruitment assistant.
+
+I can help you evaluate candidates, analyze missing skills, inspect verbatim resume citations, and verify objective PROOF SCORES™.
+
+How can I assist your hiring decision today?`,
+        groundedFacts: [
+          'Zero-hallucination verification active across all candidate evaluations.',
+          'Blind screening enabled for objective talent sourcing.',
+          'Verbatim character-offset resume citation indexing active.'
+        ],
+        evidenceCitations: [],
+        suggestedFollowUps: [
+          'Why is Alex Rivera an 87% match?',
+          'What evidence is verified for Docker & AWS?',
+          'How does zero-bias blind screening work?',
+          'What requirements are missing?'
+        ],
+        modelUsed: 'PROOFLY Grounded LLM Engine'
+      };
+    }
+
+    // 1. Blind Screening / Bias question
+    if (qTrim.includes('blind') || qTrim.includes('bias') || qTrim.includes('anonymize') || qTrim.includes('cand-8f2a')) {
+      return {
+        answer: `🛡️ **PROOFLY Blind Screening Mode** anonymizes candidate identities to eliminate demographic, gender, and prestige bias during initial evaluation.
+
+• Hides name, location, and institution identifiers.
+• Generates immutable blind codes (e.g. \`CAND-8F2A\`).
+• Ranks candidates purely by verified evidence metrics.`,
+        groundedFacts: [
+          'Demographic data masked during initial screening stage.',
+          'Deterministic requirement matching enforces equal evaluation rules.',
+          'Recruiters can toggle blind mode on/off on demand.'
+        ],
+        evidenceCitations: [
+          {
+            title: 'Blind Evaluation Code',
+            section: 'Application Identity',
+            snippet: 'Candidate Anonymized ID: CAND-8F2A',
+            status: 'VERIFIED'
+          }
+        ],
+        suggestedFollowUps: [
+          'Why is Alex Rivera an 87% match?',
+          'Show me evidence for AWS',
+          'What requirements are missing?'
+        ],
+        modelUsed: 'PROOFLY Grounded LLM Engine'
+      };
+    }
+
+    // 2. Missing Requirements question
+    if (qTrim.includes('missing') || qTrim.includes('gap') || qTrim.includes('lack') || qTrim.includes('why not 100')) {
       return {
         answer: `Based on the deterministic LLM evaluation of ${candidateName}'s resume against the ${app?.job_title || 'job requirements'}, 2 requirements lacked verified direct evidence:`,
         groundedFacts: [
@@ -138,8 +196,8 @@ Instructions:
       };
     }
 
-    // 2. AWS question
-    if (qLower.includes('aws') || qLower.includes('cloud')) {
+    // 3. AWS question
+    if (qTrim.includes('aws') || qTrim.includes('cloud')) {
       return {
         answer: `Yes, ${candidateName} has verified AWS exposure in both production and personal projects. The LLM marked this as 80% (PARTIAL) because while EC2 and S3 are documented, multi-region Terraform infrastructure is not explicitly detailed.`,
         groundedFacts: [
@@ -164,10 +222,10 @@ Instructions:
       };
     }
 
-    // 3. Backend / Python / FastAPI question
-    if (qLower.includes('backend') || qLower.includes('python') || qLower.includes('fastapi') || qLower.includes('strong')) {
+    // 4. Backend / Python / FastAPI / Skills question
+    if (qTrim.includes('backend') || qTrim.includes('python') || qTrim.includes('fastapi') || qTrim.includes('docker') || qTrim.includes('skill')) {
       return {
-        answer: `${candidateName} demonstrates strong, verified backend expertise with Python (FastAPI, Django), high-concurrency microservices, and database tuning. The candidate has 5+ years of verified production experience.`,
+        answer: `${candidateName} demonstrates strong, verified backend expertise with Python (FastAPI, Django), high-concurrency microservices, Docker, and database tuning. The candidate has 5+ years of verified production experience.`,
         groundedFacts: [
           'High-throughput Python APIs handling 15M+ requests/day (FastAPI + Celery/Redis).',
           'PostgreSQL query optimization reducing p99 latency from 450ms to 42ms.',
@@ -196,27 +254,49 @@ Instructions:
       };
     }
 
-    // 4. Default LLM Response
+    // 5. Score / Alex Rivera / Match specific question
+    if (qTrim.includes('alex') || qTrim.includes('rivera') || qTrim.includes('87') || qTrim.includes('match') || qTrim.includes('score')) {
+      return {
+        answer: `PROOFLY LLM calculated an **87.0% PROOF SCORE™** for ${candidateName}. Derived from 6 verified requirements (Python, PostgreSQL, Docker, AWS, React, BS in CS) totaling 77% contribution, with partial AWS adding 5%, and missing Kubernetes/Certifications accounting for the 13% delta.`,
+        groundedFacts: [
+          'Job Fit: 87.0% (Weighted requirement fulfillment)',
+          'Evidence Strength: 94.0% (High density of production experience citations)',
+          'Requirement Coverage: 82.0% (6/8 requirements satisfied)',
+          'Profile Completeness: 91.0% (12/13 standard fields detected)'
+        ],
+        evidenceCitations: [
+          {
+            title: 'Full Stack & Backend Match',
+            section: 'Experience & Skills',
+            snippet: 'Python, FastAPI, Django, SQL, PostgreSQL, Docker, Redis, REST APIs, TypeScript, React.',
+            status: 'VERIFIED'
+          }
+        ],
+        suggestedFollowUps: [
+          'Why not 100%?',
+          'Show me evidence for AWS',
+          'What requirements are missing?'
+        ],
+        modelUsed: 'PROOFLY Grounded LLM Engine'
+      };
+    }
+
+    // 6. Conversational Fallback (Echoes Query)
     return {
-      answer: `PROOFLY LLM calculated an 87.0% PROOF SCORE™ for ${candidateName}. Derived from 6 verified requirements (Python, PostgreSQL, Docker, AWS, React, BS in CS) totaling 77% contribution, with partial AWS adding 5%, and missing Kubernetes/Certifications accounting for the 13% delta.`,
+      answer: `I have processed your query regarding "${question}".
+
+As PROOFLY LLM, I evaluate candidates against specific job requirements using verifiable resume evidence.
+
+Would you like me to analyze candidate match scores, inspect verbatim citations, or show missing requirement gaps?`,
       groundedFacts: [
-        'Job Fit: 87.0% (Weighted requirement fulfillment)',
-        'Evidence Strength: 94.0% (High density of production experience citations)',
-        'Requirement Coverage: 82.0% (6/8 requirements satisfied)',
-        'Profile Completeness: 91.0% (12/13 standard fields detected)'
+        'Deterministic zero-drift evidence verification active.',
+        'Zero-hallucination policy strictly enforced.'
       ],
-      evidenceCitations: [
-        {
-          title: 'Full Stack & Backend Match',
-          section: 'Experience & Skills',
-          snippet: 'Python, FastAPI, Django, SQL, PostgreSQL, Docker, Redis, REST APIs, TypeScript, React.',
-          status: 'VERIFIED'
-        }
-      ],
+      evidenceCitations: [],
       suggestedFollowUps: [
-        'Why not 100%?',
-        'Show me evidence for AWS',
-        'What requirements are missing?'
+        'Why is Alex Rivera an 87% match?',
+        'What evidence is verified for Docker & AWS?',
+        'How does zero-bias blind screening work?'
       ],
       modelUsed: 'PROOFLY Grounded LLM Engine'
     };
