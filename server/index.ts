@@ -38,6 +38,8 @@ app.use((req, res, next) => {
   next();
 });
 
+import { copilotRouter } from './routes/copilot.routes.js';
+
 // API Routes
 app.use('/api/auth', authRouter);
 app.use('/api/resumes', resumeRouter);
@@ -48,6 +50,7 @@ app.use('/api/candidate', candidateRouter);
 app.use('/api/recruiter', recruiterRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/chat', copilotRouter);
 
 import { AskProoflyService } from './services/AskProoflyService.js';
 

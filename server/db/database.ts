@@ -194,6 +194,62 @@ export function initDatabase() {
       ip_address TEXT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS chat_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      candidate_id TEXT,
+      job_id TEXT,
+      application_id TEXT,
+      title TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+      sender TEXT NOT NULL CHECK(sender IN ('user', 'copilot')),
+      text TEXT NOT NULL,
+      confidence TEXT CHECK(confidence IN ('HIGH', 'MEDIUM', 'LOW')),
+      confidence_reason TEXT,
+      structure_json TEXT,
+      model_used TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_tool_calls (
+      id TEXT PRIMARY KEY,
+      message_id TEXT NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+      tool_name TEXT NOT NULL,
+      arguments_json TEXT,
+      result_json TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_citations (
+      id TEXT PRIMARY KEY,
+      message_id TEXT NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+      evidence_id TEXT,
+      requirement_id TEXT,
+      field_id TEXT,
+      title TEXT NOT NULL,
+      section TEXT NOT NULL,
+      snippet TEXT NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('VERIFIED', 'SUPPORTED', 'NO_EVIDENCE')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_actions (
+      id TEXT PRIMARY KEY,
+      message_id TEXT NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+      action_type TEXT NOT NULL,
+      description TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('PENDING', 'CONFIRMED', 'CANCELLED')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   seedDefaultData();

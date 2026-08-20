@@ -453,5 +453,46 @@ export const api = {
     });
     if (!res.ok) throw new Error('LLM Chat request failed');
     return res.json();
+  },
+
+  // PROOFLY COPILOT™ API Suite
+  async queryCopilot(payload: {
+    message: string;
+    sessionId?: string;
+    candidateId?: string;
+    jobId?: string;
+    applicationId?: string;
+    simulationWeights?: Record<string, number>;
+    compareApplicationIds?: string[];
+  }) {
+    const res = await fetch(`${API_BASE}/chat/query`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'PROOFLY COPILOT query failed');
+    }
+    return res.json();
+  },
+
+  async confirmCopilotAction(actionId: string, actionType: string, payload: any) {
+    const res = await fetch(`${API_BASE}/chat/actions/confirm`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ actionId, actionType, payload })
+    });
+    if (!res.ok) throw new Error('Copilot action confirmation failed');
+    return res.json();
+  },
+
+  async clearCopilotSession(sessionId: string) {
+    const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to clear Copilot session');
+    return res.json();
   }
 };
