@@ -9,7 +9,7 @@ interface ReportExportModalProps {
 }
 
 export const ReportExportModal: React.FC<ReportExportModalProps> = ({ isOpen, onClose, report }) => {
-  if (!isOpen) return null;
+  if (!isOpen || !report) return null;
 
   const handlePrint = () => {
     window.print();

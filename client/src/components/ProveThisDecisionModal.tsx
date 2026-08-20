@@ -23,18 +23,21 @@ interface ProveThisDecisionModalProps {
 
 export const ProveThisDecisionModal: React.FC<ProveThisDecisionModalProps> = ({ isOpen, onClose, report }) => {
   const [filter, setFilter] = useState<'ALL' | 'MATCHED' | 'PARTIAL' | 'NO EVIDENCE'>('ALL');
-  const [selectedItem, setSelectedItem] = useState<EvidenceItem | null>(report.evidenceItems[0] || null);
+  const [selectedItem, setSelectedItem] = useState<EvidenceItem | null>(() => report?.evidenceItems?.[0] || null);
 
-  if (!isOpen) return null;
+  if (!isOpen || !report || !report.evidenceItems) return null;
 
-  const filteredItems = report.evidenceItems.filter(item => {
+  const items = report.evidenceItems || [];
+  const activeItem = selectedItem || items[0] || null;
+
+  const filteredItems = items.filter(item => {
     if (filter === 'ALL') return true;
     return item.match_status === filter;
   });
 
-  const matchedCount = report.evidenceItems.filter(i => i.match_status === 'MATCHED').length;
-  const partialCount = report.evidenceItems.filter(i => i.match_status === 'PARTIAL').length;
-  const noEvidenceCount = report.evidenceItems.filter(i => i.match_status === 'NO EVIDENCE').length;
+  const matchedCount = items.filter(i => i.match_status === 'MATCHED').length;
+  const partialCount = items.filter(i => i.match_status === 'PARTIAL').length;
+  const noEvidenceCount = items.filter(i => i.match_status === 'NO EVIDENCE').length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fadeIn">
@@ -130,7 +133,7 @@ export const ProveThisDecisionModal: React.FC<ProveThisDecisionModalProps> = ({ 
               Select Requirement to Trace Proof
             </p>
             {filteredItems.map(item => {
-              const isSelected = selectedItem?.id === item.id;
+              const isSelected = activeItem?.id === item.id;
               return (
                 <div
                   key={item.id}
@@ -176,7 +179,7 @@ export const ProveThisDecisionModal: React.FC<ProveThisDecisionModalProps> = ({ 
 
           {/* Right Column: Visual Evidence Trace Chain */}
           <div className="md:col-span-7 overflow-y-auto p-6 bg-[#0B101E] space-y-6">
-            {selectedItem ? (
+            {activeItem ? (
               <div className="space-y-6 animate-fadeIn">
                 {/* Stage Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -186,14 +189,14 @@ export const ProveThisDecisionModal: React.FC<ProveThisDecisionModalProps> = ({ 
                   </div>
                   <span
                     className={`text-xs font-bold px-3 py-1 rounded-full ${
-                      selectedItem.match_status === 'MATCHED'
+                      activeItem.match_status === 'MATCHED'
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                        : selectedItem.match_status === 'PARTIAL'
+                        : activeItem.match_status === 'PARTIAL'
                         ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                         : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                     }`}
                   >
-                    STATUS: {selectedItem.match_status}
+                    STATUS: {activeItem.match_status}
                   </span>
                 </div>
 
@@ -205,10 +208,10 @@ export const ProveThisDecisionModal: React.FC<ProveThisDecisionModalProps> = ({ 
                       <span className="font-mono text-blue-400 flex items-center gap-1.5">
                         <Layers className="w-3.5 h-3.5" /> 1. JOB REQUIREMENT
                       </span>
-                      <span className="text-[11px] font-mono">Importance: {selectedItem.importance || 'HIGH'}</span>
+                      <span className="text-[11px] font-mono">Importance: {activeItem.importance || 'HIGH'}</span>
                     </div>
                     <p className="text-sm font-semibold text-white mt-1">
-                      {selectedItem.req_description || 'Job Requirement Specification'}
+                      {activeItem.req_description || 'Job Requirement Specification'}
                     </p>
                   </div>
 
@@ -225,10 +228,10 @@ export const ProveThisDecisionModal: React.FC<ProveThisDecisionModalProps> = ({ 
                       <span className="font-mono text-purple-400 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5" /> 2. PARSED FIELD & EXPLANATION
                       </span>
-                      <span className="text-[11px] font-mono">Confidence: {Math.round(selectedItem.confidence * 100)}%</span>
+                      <span className="text-[11px] font-mono">Confidence: {Math.round((activeItem.confidence || 1) * 100)}%</span>
                     </div>
                     <p className="text-xs text-slate-200 mt-1 leading-relaxed">
-                      {selectedItem.explanation}
+                      {activeItem.explanation}
                     </p>
                   </div>
 
@@ -246,11 +249,11 @@ export const ProveThisDecisionModal: React.FC<ProveThisDecisionModalProps> = ({ 
                         <FileText className="w-3.5 h-3.5" /> 3. RESUME SECTION & CHAR OFFSET
                       </span>
                       <span className="text-[11px] font-mono text-slate-400">
-                        Offset: {selectedItem.character_offset || 'Indexed'}
+                        Offset: {activeItem.character_offset || 'Indexed'}
                       </span>
                     </div>
                     <p className="text-xs font-semibold text-white mt-1">
-                      Section: <span className="text-cyan-300 font-mono">{selectedItem.source_section || 'Resume Text'}</span>
+                      Section: <span className="text-cyan-300 font-mono">{activeItem.source_section || 'Resume Text'}</span>
                     </p>
                   </div>
 
@@ -263,9 +266,9 @@ export const ProveThisDecisionModal: React.FC<ProveThisDecisionModalProps> = ({ 
 
                   {/* Step 4: Verbatim Evidence Quote */}
                   <div className={`p-4 rounded-xl border ${
-                    selectedItem.match_status === 'MATCHED'
+                    activeItem.match_status === 'MATCHED'
                       ? 'bg-emerald-950/20 border-emerald-500/40'
-                      : selectedItem.match_status === 'PARTIAL'
+                      : activeItem.match_status === 'PARTIAL'
                       ? 'bg-amber-950/20 border-amber-500/40'
                       : 'bg-rose-950/20 border-rose-500/40'
                   }`}>
@@ -278,7 +281,7 @@ export const ProveThisDecisionModal: React.FC<ProveThisDecisionModalProps> = ({ 
                       </span>
                     </div>
                     <div className="p-3 rounded-lg bg-black/50 border border-slate-800/80 font-mono text-xs text-slate-200 leading-relaxed">
-                      "{selectedItem.evidence_text}"
+                      "{activeItem.evidence_text}"
                     </div>
                   </div>
                 </div>
