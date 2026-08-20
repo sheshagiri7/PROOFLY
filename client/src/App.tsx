@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { GlobalChatBot } from './components/GlobalChatBot';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
@@ -85,6 +86,7 @@ const AppContent: React.FC = () => {
         </Routes>
       </main>
       <Footer />
+      <GlobalChatBot />
     </div>
   );
 };
